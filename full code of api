@@ -1,0 +1,72 @@
+from wsgiref.simple_server import make_server
+import falcon
+import json
+from mongoengine import connect
+from mongoengine.document import Document
+from mongoengine import Document, StringField, DateTimeField, SequenceField
+import datetime
+connect(db="tarun", host="localhost", port=27017)
+
+class User(Document):
+    name = StringField(required=True)
+    time  = DateTimeField(default=datetime.datetime.now)
+    user_id = SequenceField(required=True, primary_key=True)
+class Abc():
+
+    def on_get(self, req, resp):
+        """Handles GET requests"""
+        resp.status = falcon.HTTP_200  
+        resp.content_type = falcon.MEDIA_JSON
+        l=[]
+        for y in User.objects:
+            a = int(y.id)
+            z=str(y.time)
+            x={
+            "name":y.name,
+            "time":z,
+            "id":a
+            }
+            l.append(x)
+            resp.media=l
+    def on_post(self, req, resp):
+
+         """Handles post requests"""
+         resp.status = falcon.HTTP_200  
+         resp.content_type = falcon.MEDIA_JSON
+         x = (req.media.get('name'))
+         User(name =x ).save()
+         resp.media = {"result" : "done"}
+
+    def on_put(self, req, resp):
+        resp.status = falcon.HTTP_200  
+        resp.content_type = falcon.MEDIA_JSON
+        p = int(req.media.get("id"))                 #get the id from api
+        e = req.media.get("name")                    #get the name from api
+        for v in User.objects(user_id=p):            #if id is match from api id then update name
+            v.update(name=str(e))
+        
+        resp.media = {"result":"done"}
+        
+        
+    def on_delete(self, req, resp):
+        resp.status = falcon.HTTP_200  
+        resp.content_type = falcon.MEDIA_JSON
+        t=int(req.media.get("id"))               #get the id from api
+        User.objects.get(user_id=t).delete()     #if match the user_id from api id then delete the collection
+        resp.media = {"result":"done"}
+        
+
+app = falcon.App()
+
+
+appi = Abc()
+
+
+app.add_route('/Abc', appi)
+
+if __name__ == '__main__':
+    with make_server('', 8000, app) as httpd:
+        print('Serving on port 8000...')
+
+        
+        httpd.serve_forever()
